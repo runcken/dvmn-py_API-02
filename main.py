@@ -4,61 +4,61 @@ from dotenv import load_dotenv
 from urllib.parse import urlparse
 
 
-def shorten_link(token, url):
+def shorten_link(vk_token, url):
     api_url = 'https://api.vk.ru/method/utils.getShortLink'
     params = {
-        'access_token': token,
+        'access_token': vk_token,
         'url': url,
         'v': '5.199'
         }
     response = requests.get(api_url, params=params)
     response.raise_for_status()
-    data = response.json()
-    if 'response' not in data:
+    vk_answer = response.json()
+    if 'error' in vk_answer:
         raise ValueError('Неверный формат ссылки')
-    return data['response']['short_url']
+    return vk_answer['response']['short_url']
 
 
-def get_link_stats(token, key):
+def get_link_stats(vk_token, key):
     api_url = 'https://api.vk.ru/method/utils.getLinkStats'
     params = {
-        'access_token': token,
+        'access_token': vk_token,
         'key': key,
         'interval': 'forever',
         'v': '5.199'
         }
     response = requests.get(api_url, params=params)
     response.raise_for_status()
-    data = response.json()
-    if 'response' not in data or 'stats' not in data['response']:
+    vk_answer = response.json()
+    if 'error' in vk_answer:
         raise ValueError('Нет статистики кликов')
-    return data['response']['stats'][0]['views']
+    return vk_answer['response']['stats'][0]['views']
 
 
-def is_short_link(token, key):
+def is_short_link(vk_token, key):
     api_url = 'https://api.vk.ru/method/utils.getLinkStats'
     params = {
-        'access_token': token,
+        'access_token': vk_token,
         'key': key,
         'v': '5.199'
         }
     response = requests.get(api_url, params=params)
     response.raise_for_status()
-    data = response.json()
-    return 'response' in data
+    vk_answer = response.json()
+    return 'response' in vk_answer
 
 
 def main():
     load_dotenv()
-    token = os.getenv('TOKEN')
+    vk_token = os.environ['VK_ACCESS_TOKEN']
     url = input('Введите ссылку: ')
-    parsed = urlparse(url)
-    key = parsed.path.strip('/')  # извлекаем key из ссылки
+    parsed_url = urlparse(url)
+    key = parsed_url.path.strip('/')  # извлекаем key из ссылки
     try:
-        if is_short_link(token, key):
-            print('Количество просмотров:', get_link_stats(token, key))
+        if is_short_link(vk_token, key):
+            print('Количество просмотров:', get_link_stats(vk_token, key))
         else:
-            print('Сокращенная ссылка:', shorten_link(token, url))
+            print('Сокращенная ссылка:', shorten_link(vk_token, url))
     except requests.exceptions.HTTPError as error:
         print(f'Ошибка API: {error}')
     except requests.exceptions.RequestException as e:
